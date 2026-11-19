@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Convert NLB Macedonia Excel bank statements and other mapped exports into YNAB-ready CSV files, directly in your browser.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.sheetjs.com; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="color-scheme" content="light">
+  <title>Bank to YNAB · Private CSV converter</title>
+  <link rel="stylesheet" href="./styles.css">
+  <!-- Pinned SheetJS: browser-only .xls/.xlsx/.csv parsing. The GitHub Pages workflow
+       self-hosts this file and rewrites the URL to ./vendor/xlsx.full.min.js. -->
+  <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <div class="brand" aria-label="Bank to YNAB">
+        <span class="brand-symbol" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16m0 0-4-4m4 4-4 4"/><path d="M20 17H4m0 0 4-4m-4 4 4 4"/></svg>
+        </span>
+        <strong>Bank <span class="brand-arrow">→</span> YNAB</strong>
+      </div>
+      <div class="header-right"><span class="privacy-dot" aria-hidden="true"></span> 100% browser-based</div>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <span class="eyebrow">PERSONAL FINANCE, WITHOUT THE EXTRA STEPS</span>
+          <h1 id="page-title">Your bank statement.<br><span>Ready for YNAB.</span></h1>
+          <p>Turn Excel exports from your bank into clean, import-ready CSV files. No accounts to connect, no statements to upload to a server.</p>
+          <div class="hero-points"><span><svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 10 4 4 8-8"/></svg> NLB Macedonia optimized</span><span><svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 10 4 4 8-8"/></svg> Debit, credit & bank fees</span><span><svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 10 4 4 8-8"/></svg> Duplicate protection</span></div>
+        </div>
+        <div class="hero-graphic" aria-hidden="true">
+          <div class="mini-sheet">
+            <div class="mini-sheet-top"><span class="mini-file-badge">XLS</span><span>Bank export</span><span class="mini-dots">···</span></div>
+            <div class="mini-sheet-row"><span class="mock-line w50"></span><span class="mock-line w32"></span></div>
+            <div class="mini-sheet-row"><span class="mock-line w67"></span><span class="mock-line w24"></span></div>
+            <div class="mini-sheet-row"><span class="mock-line w42"></span><span class="mock-line w32"></span></div>
+          </div>
+          <div class="hero-transform"><span>→</span></div>
+          <div class="mini-sheet mini-sheet-success">
+            <div class="mini-sheet-top"><span class="mini-file-badge badge-csv">CSV</span><span>YNAB import</span><span class="mini-ready">✓</span></div>
+            <div class="mini-sheet-row"><span class="mock-line w42"></span><span class="mini-amount">− 1,425.00</span></div>
+            <div class="mini-sheet-row"><span class="mock-line w50"></span><span class="mini-amount positive">+ 500.00</span></div>
+            <div class="mini-sheet-row"><span class="mock-line w67"></span><span class="mini-amount">− 470.00</span></div>
+          </div>
+        </div>
+      </section>
+
+      <div id="banner" class="banner" role="status" aria-live="polite" hidden></div>
+
+      <section class="panel upload-panel" aria-labelledby="upload-title">
+        <div class="section-top"><div class="step-number">1</div><div><h2 id="upload-title">Add your bank statements</h2><p>Drop an export below or choose it from your device.</p></div></div>
+        <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Drop your Excel or CSV files here, or press Enter to browse">
+          <div class="upload-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg></div>
+          <h3>Drag & drop your files here</h3>
+          <p>Supports <strong>.xls</strong>, <strong>.xlsx</strong>, and <strong>.csv</strong> · Up to 20 files</p>
+          <button id="browseButton" type="button" class="button button-primary">Choose bank files</button>
+          <input id="fileInput" type="file" accept=".xls,.xlsx,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" multiple hidden>
+          <div class="dropzone-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Your statements stay on this device</div>
+        </div>
+        <div id="filesPanel" class="files-panel" hidden>
+          <div class="files-header"><span id="filesCount">0 files added</span><div class="file-actions"><button id="addMoreButton" type="button" class="text-button">+ Add more</button><button id="clearButton" type="button" class="text-button muted">Clear all</button></div></div>
+          <ul id="fileList" class="file-list" aria-label="Uploaded files"></ul>
+        </div>
+      </section>
+
+      <section id="mappingPanel" class="panel mapping-panel" aria-labelledby="mapping-title" hidden>
+        <div class="section-top"><div class="step-number neutral">↳</div><div><h2 id="mapping-title">Match the bank columns</h2><p id="mappingExplanation">Select the columns to import.</p></div></div>
+        <div class="mapping-toolbar">
+          <label id="mappingFilePickerWrap" class="control-group" hidden><span>File</span><select id="mappingFilePicker" class="form-control"></select></label>
+          <label id="mappingSheetPickerWrap" class="control-group" hidden><span>Worksheet</span><select id="mappingSheetPicker" class="form-control"></select></label>
+          <label class="control-group header-row-picker"><span>Header row</span><span id="headerRowSelectWrap"></span></label>
+          <label class="control-group"><span>Amounts</span><select id="mappingMode" class="form-control"><option value="separate">Separate debit / credit</option><option value="signed">One signed amount</option></select></label>
+        </div>
+        <label class="check-line"><input type="checkbox" id="hasHeader" checked><span>The first selected row contains column names</span></label>
+        <div id="mappingFields" class="mapping-grid"></div>
+      </section>
+
+      <section id="settingsPanel" class="panel settings-panel" aria-labelledby="settings-title" hidden>
+        <div class="section-top"><div class="step-number">2</div><div><h2 id="settings-title">Fine-tune the conversion</h2><p>Good defaults for NLB statements, adjustable for your workflow.</p></div></div>
+        <div class="settings-grid">
+          <div class="setting-stack">
+            <div class="setting-heading">Conversion options</div>
+            <label class="check-line"><input type="checkbox" id="cleanPayees" checked><span><strong>Clean up merchant names</strong><small>“SKOPJE&nbsp; &nbsp; &nbsp;WOLT” becomes “WOLT”</small></span></label>
+            <label class="check-line"><input type="checkbox" id="deduplicate" checked><span><strong>Remove overlaps between files</strong><small>Keeps repeated purchases within one statement</small></span></label>
+            <label class="control-group"><span>Bank fee handling</span><select id="feeTreatment" class="form-control"><option value="separate">Separate bank fee transactions (recommended)</option><option value="merge">Add fee to outgoing payment</option><option value="ignore">Exclude fees (may affect balance)</option></select></label>
+            <label class="control-group date-format-field"><span>Source date format (other banks)</span><select id="dateOrder" class="form-control"><option value="DMY">Day / Month / Year</option><option value="MDY">Month / Day / Year</option><option value="YMD">Year / Month / Day</option></select></label>
+          </div>
+          <div class="setting-stack date-stack">
+            <div class="setting-heading">Date range <span class="optional">Optional</span></div>
+            <p class="setting-hint">Import all available dates, or choose a narrower range to avoid re-importing old activity.</p>
+            <div class="date-fields"><label class="control-group"><span>From</span><input id="fromDate" type="date" class="form-control"></label><label class="control-group"><span>To</span><input id="toDate" type="date" class="form-control"></label></div>
+            <button id="resetDates" type="button" class="text-button dates-reset">Use all dates</button>
+            <div class="tip"><span class="tip-icon">i</span><span>Import each bank account into its corresponding YNAB account. The CSV contains no bank account number or category assignments.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="resultPanel" class="result-panel" aria-labelledby="results-title" hidden>
+        <div class="section-top result-heading"><div class="step-number">3</div><div><h2 id="results-title">Review & download</h2><p>Preview exactly what will be included in the CSV.</p></div></div>
+        <div class="stats-grid">
+          <div class="stat"><span class="stat-label">Transactions</span><strong id="totalCount" class="stat-value">0</strong><span class="stat-desc" id="dateRange">—</span></div>
+          <div class="stat"><span class="stat-label">Outflow</span><strong id="totalOutflow" class="stat-value stat-out">—</strong><span class="stat-desc">Money leaving your account</span></div>
+          <div class="stat"><span class="stat-label">Inflow</span><strong id="totalInflow" class="stat-value stat-in">—</strong><span class="stat-desc">Money entering your account</span></div>
+          <div class="stat"><span class="stat-label">Net change</span><strong id="netChange" class="stat-value">—</strong><span class="stat-desc">Inflow less outflow</span></div>
+        </div>
+        <div class="validation-line"><span class="validation-item"><span id="balanceStatusIcon" class="validation-check">✓</span> <span id="balanceCheck">Balance check</span></span><span class="validation-separator"></span><span class="validation-item"><span class="validation-check">✓</span> <span id="dedupInfo">No duplicates</span></span></div>
+        <div id="issues" class="issues" aria-live="polite" hidden></div>
+        <div class="preview-panel">
+          <div class="preview-header"><div><h3>Transaction preview</h3><p id="previewCaption">Dates and amounts</p></div><span class="preview-chip">YNAB CSV columns</span></div>
+          <div id="previewTableWrap" class="table-wrap"><table class="preview-table"><thead><tr><th>Date</th><th>Payee</th><th>Memo</th><th class="numeric">Outflow</th><th class="numeric">Inflow</th></tr></thead><tbody id="previewBody"></tbody></table></div>
+          <p id="previewEmpty" class="empty-preview" hidden>No transactions within this date range.</p>
+          <button id="previewMore" class="more-button" type="button" hidden>Show more</button>
+        </div>
+        <div class="download-section">
+          <div class="download-explanation"><strong>Ready for YNAB</strong><span id="accountNote">Confirm the correct account.</span><small id="downloadHelp">Use File-Based Import in the YNAB web app or on an iPad.</small></div>
+          <button id="downloadButton" class="button button-download" disabled type="button"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg><span id="downloadLabel">Download YNAB CSV</span></button>
+        </div>
+      </section>
+
+      <div id="emptyState" class="guidance"><div class="guidance-icon">✦</div><span><strong>Made for a repeatable workflow.</strong> Choose an NLB Bank Excel statement to have the columns detected automatically. For other statement layouts, you can map the columns yourself.</span></div>
+    </main>
+
+    <footer class="site-footer"><span>No login. No tracking. No financial data sent anywhere by this website.</span><a href="https://support.ynab.com/en_us/file-based-import-a-guide-Bkj4Sszyo" target="_blank" rel="noopener noreferrer">How to import into YNAB <span aria-hidden="true">↗</span></a></footer>
+  </div>
+</body>
+</html>

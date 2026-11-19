@@ -1,0 +1,62 @@
+name: Deploy private bank-to-YNAB converter
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Assemble static website with self-hosted Excel parser
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _site/vendor
+          cp index.html styles.css app.js core.js .nojekyll THIRD_PARTY_NOTICES.md _site/
+          mkdir -p _site/licenses
+          cp licenses/Apache-2.0.txt _site/licenses/
+          # Download program code at build time only. User statements are never in CI.
+          curl --fail --silent --show-error --location --retry 3 \
+            'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js' \
+            --output _site/vendor/xlsx.full.min.js
+          test "$(wc -c < _site/vendor/xlsx.full.min.js)" -gt 100000
+          # The live site now loads all scripts from this GitHub Pages origin.
+          python3 - <<'PY'
+          from pathlib import Path
+          html = Path('_site/index.html')
+          value = html.read_text(encoding='utf-8')
+          value = value.replace('https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js', './vendor/xlsx.full.min.js')
+          value = value.replace("script-src 'self' https://cdn.sheetjs.com", "script-src 'self'")
+          html.write_text(value, encoding='utf-8')
+          PY
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
